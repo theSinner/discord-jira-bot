@@ -10,7 +10,8 @@ import mongoengine
 import asyncio
 import discord
 import threading
-from controllers.discord import send_message, set_relation, send_embed
+import json
+from controllers.discord import send_message, set_relation, send_event
 
 client = discord.Client()
 
@@ -59,10 +60,11 @@ async def before_serving():
 
 @app.route("/callback/jira/<issue_key>", methods=["POST"])
 async def callback_jira(issue_key):
-    print(await request.get_data())
-    username = 'amir2'
-    await send_embed(
-        client, username, 'salam %s' % username)
+    data = json.loads(await request.get_data())
+    await send_event(
+        client,
+        data
+    )
     return 'OK', 200
 
 

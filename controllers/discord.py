@@ -1,17 +1,46 @@
 from models import UsernameRelation
 import discord
+import re
+import requests
+from settings import JIRA_BASE_URL, JIRA_USER_UNIQUE_KEY
+
+
+def get_issue_url(issue):
+    return f'{JIRA_BASE_URL}/browse/{issue["key"]}'
+
+
+def get_comment_url(issue, comment):
+    return f'{JIRA_BASE_URL}/browse/{issue["key"]}?focusedCommentId={comment["id"]}'
 
 
 def get_event_assignees(data):
     user_list = []
-    if data['webhookEvent'] == 'comment_created':
-        pass
-    elif data['webhookEvent'] == 'comment_updated':
-        pass
-    elif data['webhookEvent'] == 'jira:issue_created':
-        pass
-    elif data['webhookEvent'] == 'jira:issue_updated':
-        pass
+    event_author = None
+    if data['webhookEvent'] == 'comment_created' or data['webhookEvent'] == 'comment_updated':
+        message = data['comment']['body']
+        pattern = re.compile(r'\[~([a-zA-Z]*)\:(\S*)\]')
+        for match in re.finditer(pattern, message):
+            user_list.append(match.group(2))
+        event_author = data['comment']['author'][JIRA_USER_UNIQUE_KEY]
+
+    elif data['webhookEvent'] == 'jira:issue_created' or data['webhookEvent'] == 'jira:issue_updated':
+        event_author = data['user'][JIRA_USER_UNIQUE_KEY]
+        if 'watches' in data['issue'] and data['issue']['watches']['watchCount'] > 0:
+            watchers_response = requests.get(data['issue']['self']).json()
+            if watchers_response:
+                for user in watchers_response['watchers']:
+                    user_list.append(user[JIRA_USER_UNIQUE_KEY])
+
+    if 'assignee' in data['issue']['fields'] and data['issue']['fields']['assignee']:
+        user_list.append(data['issue']['fields']
+                         ['assignee'][JIRA_USER_UNIQUE_KEY])
+    if 'reporter' in data['issue']['fields'] and data['issue']['fields']['reporter']:
+        user_list.append(data['issue']['fields']
+                         ['reporter'][JIRA_USER_UNIQUE_KEY])
+
+    user_list = list(set(user_list))
+    if event_author and event_author in user_list:
+        user_list.remove(event_author)
     return user_list
 
 
@@ -19,15 +48,17 @@ def create_comment_created_embed(data):
     embed = discord.Embed(
         title=f'{data["comment"]["author"]["displayName"]} added new comment to {data["issue"]["fields"]["summary"]}',
         description=data['comment']['body'],
-        url=data['comment']['self'],
+        url=get_comment_url(data['issue'], data['comment']),
         color=0x27a877
     )
     embed.set_author(
         name=data['comment']['author']['displayName'],
-        icon_url=data['comment']['author']['avatarUrls']['32x32'],
-        url=data['comment']['author']['self'])
+        icon_url=data['comment']['author']['avatarUrls']['32x32'])
     embed.add_field(
-        name="Project", value=data["issue"]["fields"]["project"]["name"], inline=True)
+        name="Project",
+        value=data["issue"]["fields"]["project"]["name"],
+        inline=True
+    )
     embed.add_field(name="Issue", value=data["issue"]["key"], inline=True)
     embed.add_field(
         name="Status", value=data["issue"]["fields"]["status"]["name"], inline=True)
@@ -40,13 +71,12 @@ def create_comment_edited_embed(data):
     embed = discord.Embed(
         title=f'{data["comment"]["author"]["displayName"]} updated a comment in {data["issue"]["fields"]["summary"]}',
         description=data['comment']['body'],
-        url=data['comment']['self'],
+        url=get_comment_url(data['issue'], data['comment']),
         color=0xfbb829
     )
     embed.set_author(
         name=data['comment']['author']['displayName'],
-        icon_url=data['comment']['author']['avatarUrls']['32x32'],
-        url=data['comment']['author']['self'])
+        icon_url=data['comment']['author']['avatarUrls']['32x32'])
     embed.add_field(
         name="Project", value=data["issue"]["fields"]["project"]["name"], inline=True)
     embed.add_field(name="Issue", value=data["issue"]["key"], inline=True)
@@ -61,13 +91,13 @@ def create_task_created_embed(data):
     embed = discord.Embed(
         title=f'{data["user"]["displayName"]} created a new task',
         description=data["issue"]["fields"]["summary"],
-        url=data['issue']['self'],
+        url=get_issue_url(data["issue"]),
         color=0x00A0B0
     )
     embed.set_author(
         name=data['user']['displayName'],
-        icon_url=data['user']['avatarUrls']['32x32'],
-        url=data['user']['self'])
+        icon_url=data['user']['avatarUrls']['32x32']
+    )
     embed.add_field(
         name="Project", value=data["issue"]["fields"]["project"]["name"], inline=True)
     embed.add_field(name="Issue", value=data["issue"]["key"], inline=True)
@@ -106,13 +136,12 @@ def create_task_edited_embed(data):
     embed = discord.Embed(
         title=f'{data["user"]["displayName"]} updated a task',
         description=data["issue"]["fields"]["summary"],
-        url=data['issue']['self'],
+        url=get_issue_url(data["issue"]),
         color=0xE33258
     )
     embed.set_author(
         name=data['user']['displayName'],
         icon_url=data['user']['avatarUrls']['32x32'],
-        url=data['user']['self']
     )
     embed.add_field(
         name="Project", value=data["issue"]["fields"]["project"]["name"], inline=True)

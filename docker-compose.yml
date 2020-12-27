@@ -1,0 +1,45 @@
+version: '3.7'
+
+services:
+  db:
+    image: mongo:4
+    container_name: db
+    volumes:
+      - mongo_data:/data/db
+    expose:
+      - 27017
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+  api:
+    image: thesinner/discord-jira-bot
+    container_name: discord-jira-bot
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: /code/run.sh
+    environment:
+      - MONGO_HOST=db
+      - JIRA_BASE_URL=${JIRA_BASE_URL}
+      - JIRA_USER_UNIQUE_KEY=${JIRA_USER_UNIQUE_KEY}
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=${DEBUG}
+    ports:
+      - target: 5000
+        published: ${PUBLISHED_PORT_API}
+        protocol: tcp
+        mode: ingress
+    depends_on:
+      - db
+    deploy:
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  mongo_data:

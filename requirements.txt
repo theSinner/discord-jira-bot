@@ -1,0 +1,6 @@
+Quart==0.14.1
+discord==1.0.1
+mongoengine==0.21.0
+Hypercorn==0.11.1
+pylint==2.6.0
+requests==2.25.0

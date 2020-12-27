@@ -4,16 +4,17 @@ from settings import (
     MONGO_HOST,
     MONGO_PORT,
     SECRET_KEY,
-    DISCORD_TOKEN
+    DISCORD_TOKEN,
+    DEBUG
 )
 import mongoengine
 import asyncio
-import discord
+from discord.ext import commands
 import threading
 import json
 from controllers.discord import send_message, set_relation, send_event
 
-client = discord.Client()
+bot = commands.Bot(command_prefix='$')
 
 conn = mongoengine.connect(
     MONGO_DB_NAME,
@@ -25,16 +26,22 @@ app = Quart(__name__)
 app.secret_key = SECRET_KEY
 
 
-@client.event
+@bot.event
 async def on_ready():
-    print(f'{client.user} has connected to Discord!')
+    print(f'{bot.user} has connected to Discord!')
 
 
-@client.event
+@bot.command(name='setusername')
+async def _list(ctx, arg):
+    await ctx.send(arg)
+
+
+@bot.event
 async def on_message(message):
-    if message.author == client.user:
+    if message.author == bot.user:
         return
     content = message.content
+    print(content)
     if content.startswith('/setusername'):
         username = content.replace('/setusername', '').strip()
         try:
@@ -51,18 +58,18 @@ async def on_message(message):
         await message.channel.send('command not found')
 
 
-@app.before_serving
-async def before_serving():
-    loop = asyncio.get_event_loop()
-    await client.login(DISCORD_TOKEN)
-    loop.create_task(client.connect())
+# @app.before_serving
+# async def before_serving():
+#     loop = asyncio.get_event_loop()
+#     await bot.login(DISCORD_TOKEN)
+#     loop.create_task(bot.connect())
 
 
 @app.route("/callback/jira/<issue_key>", methods=["POST"])
 async def callback_jira(issue_key):
     data = json.loads(await request.get_data())
     await send_event(
-        client,
+        bot,
         data
     )
     return 'OK', 200
@@ -71,7 +78,10 @@ async def callback_jira(issue_key):
 @app.route("/<username>", methods=["GET"])
 async def send_msg(username):
     await send_message(
-        client, username, 'salam %s' % username)
+        bot, username, 'salam %s' % username)
     return 'OK', 200
 
-app.run(debug=True)
+
+bot.loop.create_task(app.run_task('0.0.0.0', debug=DEBUG))
+
+bot.run(DISCORD_TOKEN)

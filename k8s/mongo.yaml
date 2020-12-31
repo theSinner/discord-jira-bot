@@ -1,0 +1,45 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: dbotmongo
+spec:
+  selector:
+    app: dbotmongo
+  type: NodePort
+  ports:
+  - port: 27017
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbotmongo
+spec:
+  selector:
+    matchLabels:
+      app: dbotmongo
+  serviceName: "dbotmongo"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: dbotmongo
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: dbotmongo
+        image: mongo:4.0
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: dbotmongo-persistent-storage-claim
+          mountPath: /data/db
+  volumeClaimTemplates:
+  - metadata:
+      name: dbotmongo-persistent-storage-claim
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "standard"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi

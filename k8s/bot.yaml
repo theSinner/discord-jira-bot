@@ -1,0 +1,65 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: dbot-server
+spec:
+  selector:
+    app: dbot-server
+  type: NodePort
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbot-server-deployment
+  labels:
+    app: dbot-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dbot-server
+  template:
+    metadata:
+      labels:
+        app: dbot-server
+    spec:
+      containers:
+      - name: dbot-server
+        image: thesinner/discord-jira-bot:latest
+        env:
+          - name: JIRA_BASE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: discord-jira-bot-config
+                key: jira.base_url
+          - name: JIRA_USER_UNIQUE_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: discord-jira-bot-config
+                key: jira.account_id
+          - name: DISCORD_TOKEN
+            valueFrom:
+              configMapKeyRef:
+                name: discord-jira-bot-config
+                key: discord.bot_token
+          - name: SECRET_KEY
+            valueFrom:
+              configMapKeyRef:
+                name: discord-jira-bot-config
+                key: server.secret_key
+          - name: MONGO_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: discord-jira-bot-config
+                key: server.mongo_host
+          - name: DEBUG
+            valueFrom:
+              configMapKeyRef:
+                name: discord-jira-bot-config
+                key: server.debug_mode
+        ports:
+        - containerPort: 5000

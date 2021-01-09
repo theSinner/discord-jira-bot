@@ -1,5 +1,7 @@
 # DISCORD JIRA BOT
 
+[![DockerHub](https://img.shields.io/docker/pulls/thesinner/discord-jira-bot.svg)](https://hub.docker.com/r/thesinner/discord-jira-bot)
+
 It's a bot for the Discord platform to send tasks and comments (create and update) to people who should see them. :D
 
 ## Getting Started

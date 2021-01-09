@@ -24,7 +24,6 @@ services:
       - JIRA_BASE_URL=${JIRA_BASE_URL}
       - JIRA_USER_UNIQUE_KEY=${JIRA_USER_UNIQUE_KEY}
       - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - SECRET_KEY=${SECRET_KEY}
       - DEBUG=${DEBUG}
     ports:
       - target: 5000

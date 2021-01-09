@@ -1,6 +1,5 @@
 import os
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'S0meth1ngRe4llyRe4llyL0ng4ndC0mpl3x')
 DEBUG = os.getenv('DEBUG', 'false') == 'true'
 
 

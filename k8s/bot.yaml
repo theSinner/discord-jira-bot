@@ -46,11 +46,6 @@ spec:
               configMapKeyRef:
                 name: discord-jira-bot-config
                 key: discord.bot_token
-          - name: SECRET_KEY
-            valueFrom:
-              configMapKeyRef:
-                name: discord-jira-bot-config
-                key: server.secret_key
           - name: MONGO_HOST
             valueFrom:
               configMapKeyRef:

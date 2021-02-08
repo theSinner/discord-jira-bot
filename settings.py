@@ -1,7 +1,7 @@
 import os
 
 DEBUG = os.getenv('DEBUG', 'false') == 'true'
-
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 

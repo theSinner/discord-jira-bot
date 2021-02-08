@@ -14,6 +14,7 @@ def get_comment_url(issue, comment):
 
 
 def get_event_assignees(data):
+    print(data)
     user_list = []
     event_author = None
     if data['webhookEvent'] == 'comment_created' or data['webhookEvent'] == 'comment_updated':
@@ -30,17 +31,17 @@ def get_event_assignees(data):
             if watchers_response:
                 for user in watchers_response['watchers']:
                     user_list.append(user[JIRA_USER_UNIQUE_KEY])
-
-    if 'assignee' in data['issue']['fields'] and data['issue']['fields']['assignee']:
-        user_list.append(data['issue']['fields']
-                         ['assignee'][JIRA_USER_UNIQUE_KEY])
-    if 'reporter' in data['issue']['fields'] and data['issue']['fields']['reporter']:
-        user_list.append(data['issue']['fields']
-                         ['reporter'][JIRA_USER_UNIQUE_KEY])
+    if 'issue' in data:
+        if 'assignee' in data['issue']['fields'] and data['issue']['fields']['assignee']:
+            user_list.append(data['issue']['fields']
+                            ['assignee'][JIRA_USER_UNIQUE_KEY])
+        if 'reporter' in data['issue']['fields'] and data['issue']['fields']['reporter']:
+            user_list.append(data['issue']['fields']
+                            ['reporter'][JIRA_USER_UNIQUE_KEY])
 
     user_list = list(set(user_list))
-    if event_author and event_author in user_list:
-        user_list.remove(event_author)
+    # if event_author and event_author in user_list:
+    #     user_list.remove(event_author)
     return user_list
 
 
@@ -174,7 +175,7 @@ def create_task_edited_embed(data):
             value=data["issue"]["fields"]["reporter"]["displayName"],
             inline=True
         )
-    if data["changelog"]['items']:
+    if "changelog" in data and "items" in data['changelog'] and data["changelog"]['items']:
         embed.add_field(
             name="Change logs",
             value='‌',
@@ -186,7 +187,7 @@ def create_task_edited_embed(data):
                 value=log['field'].capitalize(),
                 inline=True
             )
-            if log['fromString'] is None:
+            if not log['fromString']:
                 embed.add_field(
                     name="From",
                     value='Unassigned' if log['field'] == 'assignee' else 'Null',
@@ -199,7 +200,7 @@ def create_task_edited_embed(data):
                     inline=True
                 )
 
-            if log['toString'] is None:
+            if not log['toString']:
                 embed.add_field(
                     name="To",
                     value='Unassigned' if log['field'] == 'assignee' else 'Null',
@@ -256,13 +257,20 @@ async def send_event(bot, data):
     if username_relations:
         if data and data['webhookEvent']:
             embed = None
-            if data['webhookEvent'] == 'comment_created':
+            if data['webhookEvent'] == 'comment_created' or (
+                data['webhookEvent'] == 'jira:issue_updated' and\
+                data["issue_event_type_name"] == "issue_commented"
+            ):
                 embed = create_comment_created_embed(data)
-            elif data['webhookEvent'] == 'comment_updated':
+            elif data['webhookEvent'] == 'comment_updated' or (
+                data['webhookEvent'] == 'jira:issue_updated' and\
+                data["issue_event_type_name"] == "issue_comment_edited"
+            ):
                 embed = create_comment_edited_embed(data)
             elif data['webhookEvent'] == 'jira:issue_created':
                 embed = create_task_created_embed(data)
-            elif data['webhookEvent'] == 'jira:issue_updated':
+            elif data['webhookEvent'] == 'jira:issue_updated' and\
+                 data["issue_event_type_name"] == "issue_updated":
                 embed = create_task_edited_embed(data)
             if embed is not None:
                 for item in username_relations:

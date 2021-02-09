@@ -39,8 +39,8 @@ def get_event_assignees(data):
                             ['reporter'][JIRA_USER_UNIQUE_KEY])
 
     user_list = list(set(user_list))
-    # if event_author and event_author in user_list:
-    #     user_list.remove(event_author)
+    if event_author and event_author in user_list:
+        user_list.remove(event_author)
     return user_list
 
 
@@ -274,7 +274,7 @@ async def send_event(bot, data):
             elif data['webhookEvent'] == 'jira:issue_created':
                 embed = create_task_created_embed(data)
             elif data['webhookEvent'] == 'jira:issue_updated' and\
-                 data["issue_event_type_name"] == "issue_updated":
+                 data["issue_event_type_name"].find('comment') == -1:
                 embed = create_task_edited_embed(data)
             if embed is not None:
                 for item in username_relations:

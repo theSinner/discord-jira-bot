@@ -5,7 +5,7 @@ services:
     image: mongo:4
     container_name: db
     volumes:
-      - mongo_data:/data/db
+      - ${MONGO_STORAGE_PATH}:/data/db
     expose:
       - 27017
     deploy:
@@ -39,6 +39,3 @@ services:
         delay: 10s
       restart_policy:
         condition: on-failure
-
-volumes:
-  mongo_data:

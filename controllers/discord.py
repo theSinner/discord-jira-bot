@@ -14,7 +14,6 @@ def get_comment_url(issue, comment):
 
 
 def get_event_assignees(data):
-    print(data)
     user_list = []
     event_author = None
     if data['webhookEvent'] == 'comment_created' or data['webhookEvent'] == 'comment_updated':
@@ -239,6 +238,11 @@ def set_relation(discord_username, discord_user_id, jira_username):
         )
         relation.save()
 
+
+def delete_relation(discord_user_id):
+    UsernameRelation.objects.filter(
+        discord_user_id=discord_user_id
+    ).delete()
 
 async def send_message(bot, jira_username, msg):
     username_relation = UsernameRelation.objects.filter(

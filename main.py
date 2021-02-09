@@ -12,7 +12,12 @@ import asyncio
 from discord.ext import commands
 import threading
 import json
-from controllers.discord import send_message, set_relation, send_event
+from controllers.discord import (
+    send_message,
+    set_relation,
+    send_event,
+    delete_relation
+)
 
 bot = commands.Bot(command_prefix='$')
 
@@ -30,40 +35,29 @@ app.secret_key = SECRET_KEY
 async def on_ready():
     print(f'{bot.user} has connected to Discord!')
 
+@bot.command(name='connect')
+async def connect(context, username):
+    try:
+        set_relation(
+            str(context.author),
+            str(context.author.id),
+            username
+        )
+        await context.send('Your account connected to %s jira account successfuly!' % (username))
+    except Exception as e:
+        await context.send('Something went wrong')
+        raise e
 
-@bot.command(name='setusername')
-async def _list(ctx, arg):
-    await ctx.send(arg)
-
-
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-    content = message.content
-    print(content)
-    if content.startswith('/setusername'):
-        username = content.replace('/setusername', '').strip()
-        try:
-            set_relation(
-                str(message.author),
-                str(message.author.id),
-                username
-            )
-            await message.channel.send('Your account connected to %s jira account successfuly!' % (username))
-        except Exception as e:
-            await message.channel.send('Something went wrong')
-            raise e
-    else:
-        await message.channel.send('command not found')
-
-
-# @app.before_serving
-# async def before_serving():
-#     loop = asyncio.get_event_loop()
-#     await bot.login(DISCORD_TOKEN)
-#     loop.create_task(bot.connect())
-
+@bot.command(name='disconnect')
+async def disconnect(context):
+    try:
+        delete_relation(
+            str(context.author.id),
+        )
+        await context.send('Your account disconnected successfuly!')
+    except Exception as e:
+        await context.send('Something went wrong')
+        raise e
 
 @app.route("/callback/jira/<issue_key>", methods=["POST"])
 async def callback_jira(issue_key):
